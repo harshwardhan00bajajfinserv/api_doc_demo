@@ -1,0 +1,636 @@
+# AI-Powered API Documentation Generation System
+
+You are a Senior Python Architect and Staff Software Engineer.
+
+Design and generate a complete production-ready codebase for an AI-powered API Documentation Generation System.
+
+The implementation must be fully modular, scalable, and runnable.
+
+Do not provide pseudocode.
+
+Generate complete code for every file.
+
+Include folder structure, installation instructions, requirements.txt, database scripts, API endpoints, scheduler, services, utilities, error handling, logging, and configuration management.
+
+---
+
+# PROJECT OVERVIEW
+
+The system automatically generates API documentation from GitHub repositories using a locally running LLM (Ollama).
+
+The generated documentation is stored in PostgreSQL along with embeddings.
+
+The system supports Retrieval-Augmented Generation (RAG) by fetching similar documentation before generating new documentation.
+
+The system also includes automatic repository synchronization through scheduled jobs.
+
+---
+
+# TECHNOLOGY STACK
+
+Frontend:
+
+* Streamlit
+
+Backend:
+
+* Flask
+
+Database:
+
+* PostgreSQL
+
+LLM:
+
+* Ollama running locally
+
+LLM Model:
+
+* llama3
+
+Embedding Model:
+
+* nomic-embed-text
+
+Vector Storage:
+
+* PostgreSQL FLOAT[] column
+* pgvector is NOT available
+
+Scheduler:
+
+* APScheduler
+
+GitHub Integration:
+
+* GitHub REST API
+
+Language:
+
+* Python 3.11+
+
+---
+
+# DATABASE TABLE
+
+Database already contains a table named docs.
+
+Table structure:
+
+CREATE TABLE docs (
+id SERIAL PRIMARY KEY,
+api_name TEXT,
+content TEXT,
+embeddings FLOAT[]
+);
+
+You may add additional columns if required for production-grade implementation.
+
+Recommended columns:
+
+ALTER TABLE docs
+ADD COLUMN repo_url TEXT,
+ADD COLUMN source_hash TEXT,
+ADD COLUMN embedding_model TEXT,
+ADD COLUMN last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN last_commit_sha TEXT;
+
+---
+
+# SYSTEM WORKFLOW
+
+STEP 1
+
+User enters GitHub repository URL from Streamlit UI.
+
+Example:
+
+https://github.com/company/payment-service
+
+---
+
+STEP 2
+
+Frontend sends request to Flask API.
+
+POST /generate-docs
+
+Request:
+
+{
+"repo_url": "https://github.com/company/payment-service"
+}
+
+---
+
+STEP 3
+
+Backend fetches repository source code.
+
+Only process API-related files.
+
+Supported file types:
+
+.java
+.js
+.ts
+.py
+.go
+.kt
+.cs
+
+Ignore:
+
+node_modules
+target
+build
+dist
+.git
+.idea
+venv
+**pycache**
+
+---
+
+STEP 4
+
+Repository parser extracts:
+
+Controllers
+Routes
+REST APIs
+Endpoints
+Annotations
+
+Examples:
+
+@RestController
+@RequestMapping
+@GetMapping
+@PostMapping
+router.get()
+router.post()
+Flask routes
+FastAPI routes
+
+---
+
+STEP 5
+
+Large files must be chunked.
+
+Implement smart chunking.
+
+Requirements:
+
+* Preserve method boundaries
+* Preserve class boundaries
+* Max chunk size configurable
+* Default chunk size 3000 characters
+
+---
+
+STEP 6
+
+Before generating documentation:
+
+Generate embedding for source code chunk.
+
+Use Ollama embedding API.
+
+Model:
+
+nomic-embed-text
+
+---
+
+STEP 7
+
+Retrieve similar documentation from database.
+
+Because pgvector is unavailable:
+
+Implement cosine similarity manually.
+
+Requirements:
+
+1. Load embeddings from PostgreSQL.
+2. Compare with query embedding.
+3. Sort by similarity score.
+4. Return Top-K documents.
+
+Default:
+
+Top 5 documents.
+
+---
+
+STEP 8
+
+RAG Context Construction
+
+Create context:
+
+Existing Documentation:
+
+[Top Similar Doc 1]
+[Top Similar Doc 2]
+[Top Similar Doc 3]
+
+Source Code:
+
+[Current Source Code]
+
+Generate documentation in the same format.
+
+---
+
+STEP 9
+
+LLM Documentation Generation
+
+Use Ollama API.
+
+Model:
+
+llama3
+
+Prompt must generate:
+
+* API Name
+* Endpoint
+* HTTP Method
+* Description
+* Request Parameters
+* Request Body
+* Response Body
+* Status Codes
+* Error Responses
+* Authentication Requirements
+* Example Request
+* Example Response
+
+Output format:
+
+Markdown
+
+---
+
+STEP 10
+
+Store generated documentation.
+
+Store:
+
+api_name
+content
+embeddings
+repo_url
+source_hash
+embedding_model
+last_commit_sha
+
+---
+
+STEP 11
+
+Download Documentation
+
+Endpoint:
+
+GET /download/<api_name>
+
+Returns:
+
+Markdown file
+
+---
+
+STEP 12
+
+Upload Documentation
+
+Endpoint:
+
+POST /upload-doc
+
+Accept:
+
+.md
+.txt
+
+Process:
+
+Generate embedding.
+
+Store in docs table.
+
+---
+
+STEP 13
+
+Fetch Documentation
+
+Endpoint:
+
+GET /docs/<api_name>
+
+Return documentation from database.
+
+---
+
+# SCHEDULER REQUIREMENTS
+
+Run daily at 12:00 AM.
+
+Use APScheduler.
+
+Workflow:
+
+1. Read tracked repositories.
+2. Fetch latest commit SHA.
+3. Compare with stored commit SHA.
+4. Skip unchanged repositories.
+5. Regenerate changed documentation.
+6. Update database.
+
+Implement scheduler service.
+
+Implement startup registration.
+
+---
+
+# GITHUB WEBHOOK FUTURE SUPPORT
+
+Design code structure for future webhook integration.
+
+Create placeholder service:
+
+github_webhook_service.py
+
+Do not fully implement.
+
+---
+
+# CHAT WITH DOCUMENTATION FUTURE SUPPORT
+
+Design architecture for future RAG chatbot.
+
+Create placeholder service:
+
+chat_service.py
+
+Expected future workflow:
+
+User Question
+→ Retrieve Similar Docs
+→ Build Context
+→ Ollama
+→ Answer
+
+---
+
+# PROJECT STRUCTURE
+
+Generate complete code for:
+
+project/
+
+frontend/
+app.py
+
+backend/
+
+```
+app.py
+
+config.py
+
+routes/
+    generate_routes.py
+    upload_routes.py
+    download_routes.py
+    docs_routes.py
+
+services/
+    github_service.py
+    parser_service.py
+    chunking_service.py
+    ollama_service.py
+    embedding_service.py
+    rag_service.py
+    document_service.py
+    scheduler_service.py
+    github_webhook_service.py
+    chat_service.py
+
+database/
+    connection.py
+    queries.py
+
+utils/
+    similarity.py
+    hashing.py
+    logger.py
+```
+
+scheduler/
+cron_jobs.py
+
+requirements.txt
+
+README.md
+
+.env.example
+
+---
+
+# DATABASE ACCESS
+
+Use psycopg2.
+
+Create reusable connection manager.
+
+Implement:
+
+insert_document()
+
+update_document()
+
+get_document()
+
+get_all_documents()
+
+get_embeddings()
+
+get_repo_documents()
+
+---
+
+# OLLAMA INTEGRATION
+
+Use REST API.
+
+Base URL:
+
+http://localhost:11434
+
+Implement:
+
+generate_documentation()
+
+generate_embedding()
+
+health_check()
+
+Retry logic required.
+
+Timeout handling required.
+
+---
+
+# ERROR HANDLING
+
+Implement:
+
+* Custom exceptions
+* API validation
+* GitHub errors
+* Ollama errors
+* Database errors
+
+Return proper HTTP status codes.
+
+---
+
+# LOGGING
+
+Implement centralized logging.
+
+Log:
+
+* API requests
+* GitHub fetch operations
+* LLM generation
+* Scheduler jobs
+* Database operations
+* Errors
+
+Use rotating file logs.
+
+---
+
+# CONFIGURATION
+
+Use environment variables.
+
+Store:
+
+DB_HOST
+DB_PORT
+DB_NAME
+DB_USER
+DB_PASSWORD
+
+OLLAMA_URL
+
+LLM_MODEL
+
+EMBEDDING_MODEL
+
+GITHUB_TOKEN
+
+CHUNK_SIZE
+
+TOP_K
+
+---
+
+# PERFORMANCE REQUIREMENTS
+
+Implement:
+
+* Repository caching
+* ThreadPoolExecutor for parallel file processing
+* Batch embedding generation
+* Hash comparison to avoid unnecessary regeneration
+
+---
+
+# SECURITY
+
+Validate repository URLs.
+
+Prevent path traversal.
+
+Limit upload size.
+
+Sanitize markdown content.
+
+Use secure file handling.
+
+---
+
+# TESTING REQUIREMENTS
+
+Generate:
+
+unit tests
+
+integration tests
+
+for:
+
+GitHub service
+Embedding service
+Similarity search
+Document storage
+Flask endpoints
+
+Use pytest.
+
+Project structure:
+
+tests/
+
+---
+
+# README REQUIREMENTS
+
+Provide complete setup instructions:
+
+1. Install PostgreSQL
+2. Create database
+3. Create docs table
+4. Install Ollama
+5. Pull models
+
+Commands:
+
+ollama pull llama3
+ollama pull nomic-embed-text
+
+6. Install dependencies
+7. Configure .env
+8. Run backend
+9. Run frontend
+10. Run scheduler
+
+---
+
+# EXPECTED OUTPUT FORMAT
+
+Generate code file by file.
+
+For each file provide:
+
+1. File path
+2. Complete code
+
+Do not skip files.
+
+Do not use pseudocode.
+
+Do not summarize.
+
+Generate the entire project implementation from start to finish.
